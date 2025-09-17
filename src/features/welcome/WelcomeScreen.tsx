@@ -14,7 +14,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   completedLessons,
   goToProgress,
 }) => {
-  const [showAnimation, setShowAnimation] = useState(true);
+  const [showAnimation] = useState(true);
 
   const lessons = [
     {

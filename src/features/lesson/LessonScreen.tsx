@@ -13,17 +13,19 @@ const lessons = [
   {
     id: 0,
     title: "Let's Meet the Keys!",
+    emoji: "🎹",
     instructions: "Press each key as it lights up! Watch where your fingers go!",
     exercises: [
       "a", "s", "d", "f", "j", "k", "l", ";",
       "Press a then s", "Press d then f", "Press j then k",
       "g h", "Press space", "Press enter"
     ],
-    targetKeys: "asdfjkl; gh ".split('') + [32, 13], // space and enter
+    targetKeys: "asdfjkl; gh ".split(''), // includes space character
   },
   {
     id: 1,
     title: "Happy Home Row",
+    emoji: "🏠",
     instructions: "Stay on the home row! Your fingers belong here: asdf jkl;",
     exercises: [
       "asdf", "jkl;", "as df", "jk l;", "f d s a", "; l k j",
@@ -34,6 +36,7 @@ const lessons = [
   {
     id: 2,
     title: "Top Row Adventure",
+    emoji: "⛰️",
     instructions: "Reach up to the top row! q w e r t y u i o p",
     exercises: [
       "qwer", "tyui", "op", "qw er", "ty ui", "op[]",
@@ -44,6 +47,7 @@ const lessons = [
   {
     id: 3,
     title: "Bottom Row Quest",
+    emoji: "🕳️",
     instructions: "Reach down to the bottom! z x c v b n m , . /",
     exercises: [
       "zxcv", "bnm", ",./", "zx cv", "bn m,", "., /",
@@ -54,6 +58,7 @@ const lessons = [
   {
     id: 4,
     title: "Number Party!",
+    emoji: "🎉",
     instructions: "Time for numbers! 1 2 3 4 5 6 7 8 9 0 - =",
     exercises: [
       "1234", "5678", "90-=", "12 34", "56 78", "90 -=",
@@ -64,6 +69,7 @@ const lessons = [
   {
     id: 5,
     title: "Super Sentences",
+    emoji: "💬",
     instructions: "Put it all together! Type these fun sentences",
     exercises: [
       "The cat sat on the mat",
@@ -126,7 +132,7 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ lessonIndex, onComplete, on
       // For uppercase letters, accept either the uppercase letter directly or lowercase + shift
       const lowercaseExpected = expected.toLowerCase();
       isCorrect = (key === expected) || 
-                  (key && key.toLowerCase && key.toLowerCase() === lowercaseExpected && event.shiftKey);
+                  (!!key && typeof key.toLowerCase === 'function' && key.toLowerCase() === lowercaseExpected && event.shiftKey);
       
       if (isCorrect) {
         feedbackMessage = 'Perfect! Great use of shift! 🎉';
@@ -158,7 +164,8 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ lessonIndex, onComplete, on
 
       // Create celebration particles
       if (containerRef.current) {
-        createParticles(containerRef.current, event.clientX, event.clientY, 'correct');
+        const rect = containerRef.current.getBoundingClientRect();
+        createParticles(containerRef.current, rect.width / 2, rect.height / 2, 'correct');
       }
 
       setFeedback(feedbackMessage);
@@ -187,7 +194,7 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ lessonIndex, onComplete, on
     }
 
     setTimeout(() => setFeedback(''), 2500);
-  }, [currentExercise, currentCharIndex, currentExerciseIndex, lesson.exercises.length, stats, lessonIndex, onComplete, showCompletion]);
+  }, [currentExercise, currentCharIndex, currentExerciseIndex, lesson.exercises.length, stats, lessonIndex, onComplete, showCompletion, isUppercaseExpected]);
 
   useEffect(() => {
     // Add global keydown listener that always captures events
