@@ -65,7 +65,7 @@ const App: React.FC = () => {
   };
 
   const completeLesson = (lessonIndex: number, keystrokes: number, correct: number) => {
-    const newCompleted = [...new Set([...progress.completedLessons, lessonIndex])];
+    const newCompleted = Array.from(new Set([...progress.completedLessons, lessonIndex]));
     const isNewCompletion = !progress.completedLessons.includes(lessonIndex);
     
     const newStats = {
