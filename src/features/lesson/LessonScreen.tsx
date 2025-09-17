@@ -93,16 +93,62 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ lessonIndex, onComplete, on
   const isComplete = currentExerciseIndex >= lesson.exercises.length - 1 && 
                     currentCharIndex >= currentExercise.length;
 
+  const isUppercaseExpected = currentChar === currentChar.toUpperCase() && currentChar.length === 1 && 
+                             'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.includes(currentChar);
+
   const handleKeyPress = useCallback((event: KeyboardEvent) => {
-    if (showCompletion || event.target !== document.body) return;
+    // Always capture key events regardless of focused element
+    event.preventDefault();
+    
+    if (showCompletion) return;
 
     const key = event.key;
+    
+    // Skip if key is undefined, null, or empty
+    if (!key || key.length === 0) {
+      return;
+    }
+
     const expected = currentExercise[currentCharIndex];
+    const isShiftKey = key === 'Shift';
+    
+    // Ignore shift key presses - they're not counted as keystrokes
+    if (isShiftKey) {
+      return;
+    }
 
     setStats(prev => ({ ...prev, total: prev.total + 1 }));
 
-    if (key === expected) {
-      setUserInput(prev => prev + key);
+    let isCorrect = false;
+    let feedbackMessage = '';
+
+    if (isUppercaseExpected) {
+      // For uppercase letters, accept either the uppercase letter directly or lowercase + shift
+      const lowercaseExpected = expected.toLowerCase();
+      isCorrect = (key === expected) || 
+                  (key && key.toLowerCase && key.toLowerCase() === lowercaseExpected && event.shiftKey);
+      
+      if (isCorrect) {
+        feedbackMessage = 'Perfect! Great use of shift! 🎉';
+      } else {
+        feedbackMessage = `Try holding Shift + "${expected.toLowerCase()}". Capital letters need the shift key! ⌨️`;
+      }
+    } else {
+      // For regular characters, match exactly (case-sensitive for symbols, etc.)
+      isCorrect = key === expected;
+      
+      if (isCorrect) {
+        feedbackMessage = 'Great job! 🎉';
+      } else {
+        // Safe check before calling toUpperCase
+        const expectedDisplay = expected && expected.length > 0 ? expected.toUpperCase() : expected;
+        feedbackMessage = `Almost! Try "${expected}" next. ${expectedDisplay} is your friend! 👆`;
+      }
+    }
+
+    if (isCorrect) {
+      const charToAdd = isUppercaseExpected && key && key.toLowerCase && key.toLowerCase() === expected.toLowerCase() ? expected : key;
+      setUserInput(prev => prev + charToAdd);
       setStats(prev => ({
         ...prev,
         correct: prev.correct + 1,
@@ -115,8 +161,7 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ lessonIndex, onComplete, on
         createParticles(containerRef.current, event.clientX, event.clientY, 'correct');
       }
 
-      // Feedback
-      setFeedback('Great job! 🎉');
+      setFeedback(feedbackMessage);
 
       // Check if exercise complete
       if (currentCharIndex + 1 >= currentExercise.length) {
@@ -132,7 +177,7 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ lessonIndex, onComplete, on
       }
     } else {
       setStats(prev => ({ ...prev, streak: 0 }));
-      setFeedback(`Almost! Try "${expected}" next. ${expected.toUpperCase()} is your friend! 👆`);
+      setFeedback(feedbackMessage);
       
       // Shake animation for wrong key
       if (containerRef.current) {
@@ -141,13 +186,22 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ lessonIndex, onComplete, on
       }
     }
 
-    setTimeout(() => setFeedback(''), 2000);
+    setTimeout(() => setFeedback(''), 2500);
   }, [currentExercise, currentCharIndex, currentExerciseIndex, lesson.exercises.length, stats, lessonIndex, onComplete, showCompletion]);
 
   useEffect(() => {
-    inputRef.current?.focus();
-    document.addEventListener('keydown', handleKeyPress);
-    return () => document.removeEventListener('keydown', handleKeyPress);
+    // Add global keydown listener that always captures events
+    document.addEventListener('keydown', handleKeyPress, true); // Use capture phase to intercept all key events
+    
+    // Focus the input initially for better accessibility
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress, true);
+      clearTimeout(timer);
+    };
   }, [handleKeyPress]);
 
   useEffect(() => {
@@ -199,8 +253,15 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ lessonIndex, onComplete, on
       case ' ': return 'Space';
       case '\n': return 'Enter';
       case '\t': return 'Tab';
-      default: return char.toUpperCase();
+      default: return char && char.length > 0 ? char.toUpperCase() : char;
     }
+  };
+
+  const getCurrentKeyHint = () => {
+    if (isUppercaseExpected) {
+      return `Hold Shift + ${currentChar.toLowerCase()}`;
+    }
+    return getSpecialKey(currentChar);
   };
 
   return (
@@ -225,6 +286,15 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ lessonIndex, onComplete, on
       <div className="lesson-content">
         <div className="instructions">
           <p>{lesson.instructions}</p>
+          {isUppercaseExpected && (
+            <p className="uppercase-hint">
+              💡 Hold down the <strong>Shift</strong> key and press {currentChar.toLowerCase()} to make {currentChar}! 
+              Both shift keys work! ⌨️
+            </p>
+          )}
+          <p className="focus-hint">
+            💡 Click anywhere or just start typing! Your keyboard is always ready! ⌨️
+          </p>
         </div>
 
         <div className="exercise-display">
@@ -239,57 +309,86 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ lessonIndex, onComplete, on
             ))}
           </div>
           
-          {currentExercise.length === 1 && (
-            <div className="special-key-hint">
-              <div className="key-label">
-                Press: <span className="highlight">{getSpecialKey(currentChar)}</span>
+          <div className="key-hint">
+            <div className="key-label">
+              Press: <span className="highlight">{getCurrentKeyHint()}</span>
+            </div>
+            {isUppercaseExpected && (
+              <div className="shift-indicator">
+                <span className="shift-key">⇧</span> + <span className="letter-key">{currentChar.toLowerCase()}</span>
               </div>
+            )}
+            {!isUppercaseExpected && currentExercise.length === 1 && (
               <div className="finger-hint">
                 Use your {currentChar === ' ' ? 'thumbs' : 'fingers'}! 👆
               </div>
+            )}
+          </div>
+        </div>
+
+        <div className="fixed-height-section">
+          <div className="typing-area">
+            <div className="user-input">
+              {userInput.split('').map((char, index) => (
+                <span key={index} className="input-char">
+                  {char === ' ' ? '␣' : char}
+                </span>
+              ))}
+            </div>
+            
+            {/* Hidden input for accessibility and initial focus */}
+            <input
+              ref={inputRef}
+              type="text"
+              value=""
+              onChange={() => {}} // Prevent actual input
+              style={{ 
+                opacity: 0, 
+                position: 'absolute',
+                left: '-9999px',
+                width: '1px',
+                height: '1px'
+              }}
+              autoFocus
+            />
+            
+            {/* Invisible overlay to capture clicks and refocus */}
+            <div 
+              className="focus-catcher"
+              onClick={() => inputRef.current?.focus()}
+              tabIndex={-1}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: -1
+              }}
+            />
+          </div>
+
+          <div className="stats-display">
+            <div className="stat">
+              <span className="stat-label">Accuracy:</span>
+              <span className="stat-value">{accuracy}%</span>
+            </div>
+            <div className="stat">
+              <span className="stat-label">Streak:</span>
+              <span className="stat-value streak">{stats.streak} 🔥</span>
+            </div>
+            <div className="stat">
+              <span className="stat-label">Speed:</span>
+              <span className="stat-value">Super Fast! 🚀</span>
+            </div>
+          </div>
+
+          {feedback && (
+            <div className="feedback">
+              {feedback}
             </div>
           )}
         </div>
-
-        <div className="typing-area">
-          <div className="user-input">
-            {userInput.split('').map((char, index) => (
-              <span key={index} className="input-char">
-                {char === ' ' ? '␣' : char}
-              </span>
-            ))}
-          </div>
-          
-          <input
-            ref={inputRef}
-            type="text"
-            value=""
-            onChange={() => {}} // Prevent actual input
-            style={{ opacity: 0, position: 'absolute' }}
-            autoFocus
-          />
-        </div>
-
-        <div className="stats-display">
-          <div className="stat">
-            <span className="stat-label">Accuracy:</span>
-            <span className="stat-value">{accuracy}%</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">Streak:</span>
-            <span className="stat-value streak">{stats.streak} 🔥</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">Speed:</span>
-            <span className="stat-value">Super Fast! 🚀</span>
-          </div>
-        </div>
-
-        {feedback && (
-          <div className={`feedback ${stats.streak > 4 ? 'super-feedback' : ''}`}>
-            {feedback}
-          </div>
-        )}
 
         <div className="encouragement">
           {stats.streak >= 5 && (
@@ -300,6 +399,11 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ lessonIndex, onComplete, on
           {accuracy >= 90 && (
             <div className="accuracy-celebration">
               Perfect accuracy! Your fingers are magical! ✨
+            </div>
+          )}
+          {isUppercaseExpected && (
+            <div className="uppercase-tip">
+              💡 Remember: Hold Shift for capital letters! Both left and right Shift work! ⌨️
             </div>
           )}
         </div>

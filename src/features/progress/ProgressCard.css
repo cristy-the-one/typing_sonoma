@@ -181,6 +181,12 @@
   font-size: 0.9em;
 }
 
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .action-button {
   width: 100%;
   padding: 15px;
@@ -192,7 +198,7 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .action-button.start {
@@ -218,6 +224,33 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+.reset-button {
+  background: linear-gradient(45deg, #ff9a9e, #fecfef);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 20px;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 10px rgba(255, 154, 158, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.reset-button:hover {
+  background: linear-gradient(45deg, #ff758f, #ff7eb3);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px rgba(255, 154, 158, 0.4);
+}
+
+.reset-button:active {
+  transform: translateY(0);
 }
 
 .button-emoji {
@@ -271,5 +304,14 @@
   
   .stars-container {
     justify-content: center;
+  }
+  
+  .card-actions {
+    gap: 8px;
+  }
+  
+  .reset-button {
+    padding: 10px;
+    font-size: 0.9em;
   }
 }

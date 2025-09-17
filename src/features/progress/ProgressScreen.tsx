@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import './ProgressScreen.css';
 import ProgressCard from './ProgressCard';
+import RestartProgressModal from './RestartProgressModal';
 
 interface Stats {
   totalKeystrokes: number;
@@ -19,14 +20,18 @@ interface ProgressScreenProps {
   progress: ProgressData;
   onStartLesson: (index: number) => void;
   onBack: () => void;
+  onUpdateProgress: (newProgress: Partial<ProgressData>) => void;
 }
 
 const ProgressScreen: React.FC<ProgressScreenProps> = ({
   progress,
   onStartLesson,
   onBack,
+  onUpdateProgress,
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'detailed'>('overview');
+  const [showRestartModal, setShowRestartModal] = useState(false);
+  const [showLessonResetModal, setShowLessonResetModal] = useState<number | null>(null);
 
   const lessons = [
     { id: 0, title: "Meet the Keys", emoji: "🎹", maxStars: 3 },
@@ -50,6 +55,34 @@ const ProgressScreen: React.FC<ProgressScreenProps> = ({
     return 1;
   };
 
+  const handleResetLesson = (lessonId: number) => {
+    const updatedCompleted = progress.completedLessons.filter(id => id !== lessonId);
+    const newStats = {
+      ...progress.stats,
+      lessonsCompleted: progress.stats.lessonsCompleted - 1,
+    };
+    
+    onUpdateProgress({
+      completedLessons: updatedCompleted,
+      stats: newStats,
+    });
+    
+    setShowLessonResetModal(null);
+  };
+
+  const handleRestartAll = () => {
+    onUpdateProgress({
+      completedLessons: [],
+      currentLesson: 0,
+      stats: {
+        totalKeystrokes: 0,
+        correctKeystrokes: 0,
+        lessonsCompleted: 0,
+      },
+    });
+    setShowRestartModal(false);
+  };
+
   return (
     <div className="progress-screen">
       <button onClick={onBack} className="back-button">
@@ -70,6 +103,12 @@ const ProgressScreen: React.FC<ProgressScreenProps> = ({
           onClick={() => setActiveTab('detailed')}
         >
           📚 Lessons
+        </button>
+        <button 
+          className="tab-button restart-button"
+          onClick={() => setShowRestartModal(true)}
+        >
+          🔄 Restart Progress
         </button>
       </div>
 
@@ -177,6 +216,7 @@ const ProgressScreen: React.FC<ProgressScreenProps> = ({
                 isCompleted={progress.completedLessons.includes(lesson.id)}
                 stars={getStarsForLesson(lesson.id)}
                 onStart={() => onStartLesson(lesson.id)}
+                onReset={() => setShowLessonResetModal(lesson.id)}
               />
             ))}
           </div>
@@ -190,10 +230,28 @@ const ProgressScreen: React.FC<ProgressScreenProps> = ({
         <button onClick={() => setActiveTab('detailed')} className="action-button">
           📚 View Lessons
         </button>
+        <button onClick={() => setShowRestartModal(true)} className="restart-all-button">
+          🔄 Restart All Progress
+        </button>
         <button onClick={onBack} className="home-button">
           🏠 Back to Adventure
         </button>
       </div>
+
+      {showRestartModal && (
+        <RestartProgressModal
+          onConfirm={handleRestartAll}
+          onCancel={() => setShowRestartModal(false)}
+        />
+      )}
+
+      {showLessonResetModal !== null && (
+        <RestartProgressModal
+          lessonId={showLessonResetModal}
+          onConfirm={() => handleResetLesson(showLessonResetModal)}
+          onCancel={() => setShowLessonResetModal(null)}
+        />
+      )}
     </div>
   );
 };

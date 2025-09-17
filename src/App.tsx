@@ -65,14 +65,20 @@ const App: React.FC = () => {
   };
 
   const completeLesson = (lessonIndex: number, keystrokes: number, correct: number) => {
-    const newCompleted = [...progress.completedLessons, lessonIndex];
+    const newCompleted = [...new Set([...progress.completedLessons, lessonIndex])];
+    const isNewCompletion = !progress.completedLessons.includes(lessonIndex);
+    
     const newStats = {
       ...progress.stats,
       totalKeystrokes: progress.stats.totalKeystrokes + keystrokes,
       correctKeystrokes: progress.stats.correctKeystrokes + correct,
-      lessonsCompleted: progress.stats.lessonsCompleted + 1,
+      lessonsCompleted: isNewCompletion ? progress.stats.lessonsCompleted + 1 : progress.stats.lessonsCompleted,
     };
-    updateProgress({ completedLessons: newCompleted, stats: newStats });
+    
+    updateProgress({ 
+      completedLessons: newCompleted, 
+      stats: newStats 
+    });
     setScreen('progress');
   };
 
@@ -99,6 +105,7 @@ const App: React.FC = () => {
           progress={progress}
           onStartLesson={startLesson}
           onBack={goToWelcome}
+          onUpdateProgress={updateProgress}
         />
       )}
     </div>

@@ -14,9 +14,16 @@ interface ProgressCardProps {
   isCompleted: boolean;
   stars: number;
   onStart: () => void;
+  onReset: () => void;
 }
 
-const ProgressCard: React.FC<ProgressCardProps> = ({ lesson, isCompleted, stars, onStart }) => {
+const ProgressCard: React.FC<ProgressCardProps> = ({ 
+  lesson, 
+  isCompleted, 
+  stars, 
+  onStart, 
+  onReset 
+}) => {
   const getCompletionColor = () => {
     if (stars === 3) return '#ffd700';
     if (stars === 2) return '#4ecdc4';
@@ -78,28 +85,40 @@ const ProgressCard: React.FC<ProgressCardProps> = ({ lesson, isCompleted, stars,
         </div>
       </div>
 
-      <button 
-        onClick={onStart}
-        className={`action-button ${isCompleted ? 'review' : 'start'}`}
-        disabled={!isCompleted && lesson.id !== 0}
-      >
-        {isCompleted ? (
-          <>
-            🔄 Practice Again
-            <span className="button-emoji">✨</span>
-          </>
-        ) : lesson.id === 0 ? (
-          <>
-            🚀 Start Lesson
-            <span className="button-emoji">🎮</span>
-          </>
-        ) : (
-          <>
-            🔒 Complete Previous
-            <span className="button-emoji">📚</span>
-          </>
+      <div className="card-actions">
+        <button 
+          onClick={onStart}
+          className={`action-button ${isCompleted ? 'review' : 'start'}`}
+          disabled={!isCompleted && lesson.id !== 0}
+        >
+          {isCompleted ? (
+            <>
+              🔄 Practice Again
+              <span className="button-emoji">✨</span>
+            </>
+          ) : lesson.id === 0 ? (
+            <>
+              🚀 Start Lesson
+              <span className="button-emoji">🎮</span>
+            </>
+          ) : (
+            <>
+              🔒 Complete Previous
+              <span className="button-emoji">📚</span>
+            </>
+          )}
+        </button>
+
+        {isCompleted && (
+          <button 
+            onClick={onReset}
+            className="reset-button"
+            title="Reset this lesson to start fresh"
+          >
+            🔄 Reset Lesson
+          </button>
         )}
-      </button>
+      </div>
 
       {!isCompleted && lesson.id > 0 && (
         <div className="locked-hint">
